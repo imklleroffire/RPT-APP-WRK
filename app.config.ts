@@ -16,7 +16,7 @@ export default {
     assetBundlePatterns: ['**/*'],
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.rpt.app',
+      bundleIdentifier: 'com.amtkumar.rptapp',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
@@ -29,7 +29,7 @@ export default {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#ffffff',
       },
-      package: 'com.rpt.app',
+      package: 'com.amtkumar.rptapp',
       runtimeVersion: '1.0.0',
     },
     web: {

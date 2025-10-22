@@ -20,9 +20,6 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
-      runtimeVersion: {
-        policy: 'appVersion',
-      },
     },
     android: {
       adaptiveIcon: {
@@ -30,7 +27,6 @@ export default {
         backgroundColor: '#ffffff',
       },
       package: 'com.amtkumar.rptapp',
-      runtimeVersion: '1.0.0',
     },
     web: {
       favicon: './assets/favicon.png',

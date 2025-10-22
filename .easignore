@@ -16,3 +16,8 @@ npm-debug.*
 *.orig.*
 web-build/
 
+# Ignore npm cache and functions
+.npm-cache/
+functions/
+*.log
+

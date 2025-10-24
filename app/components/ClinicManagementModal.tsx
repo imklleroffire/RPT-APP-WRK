@@ -1,380 +1,448 @@
-/**
- * Clinic Management Modal Component
- * Full-featured clinic management interface with therapist invitations
- */
-
 import React, { useState, useEffect } from 'react';
 import {
+  Modal,
   View,
   Text,
-  Modal,
   StyleSheet,
-  TouchableOpacity,
   TextInput,
   ScrollView,
-  Alert,
+  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { Card } from './ui/Card';
+import { Button } from './ui/Button';
+import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { showAlert } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import {
-  doc,
-  getDoc,
-  updateDoc,
   collection,
   query,
   where,
   getDocs,
+  getDoc,
+  doc,
+  updateDoc,
   addDoc,
-  Timestamp,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-
-interface Props {
-  visible: boolean;
-  onClose: () => void;
-  clinicId: string;
-  userId: string;
-}
 
 interface Therapist {
   id: string;
   name: string;
   email: string;
-  role: 'owner' | 'therapist';
   patientCount: number;
+  role: string;
 }
 
-export const ClinicManagementModal: React.FC<Props> = ({
+interface Clinic {
+  id: string;
+  name: string;
+  ownerId?: string;
+  therapistId?: string;
+  therapists?: string[];
+  createdAt: any;
+}
+
+interface ClinicManagementModalProps {
+  visible: boolean;
+  clinic: Clinic | null;
+  onClose: () => void;
+  onUpdate: () => void;
+}
+
+export default function ClinicManagementModal({
   visible,
+  clinic,
   onClose,
-  clinicId,
-  userId,
-}) => {
+  onUpdate,
+}: ClinicManagementModalProps): React.JSX.Element {
+  const { colors } = useTheme();
+  const { user } = useAuth();
   const [clinicName, setClinicName] = useState('');
-  const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [inviting, setInviting] = useState(false);
 
   useEffect(() => {
-    if (visible && clinicId) {
-      loadClinicData();
+    if (clinic && visible) {
+      setClinicName(clinic.name);
+      fetchTherapists();
     }
-  }, [visible, clinicId]);
+  }, [clinic, visible]);
 
-  const loadClinicData = async () => {
-    setLoading(true);
+  const fetchTherapists = async () => {
+    if (!clinic || !user) return;
+
     try {
-      // Load clinic info
-      const clinicDoc = await getDoc(doc(db, 'clinics', clinicId));
-      if (clinicDoc.exists()) {
-        const data = clinicDoc.data();
-        setClinicName(data.name || '');
+      setLoading(true);
+      const therapistsData: Therapist[] = [];
+      
+      // Get the current user (clinic owner) info
+      const currentUserDoc = await getDoc(doc(db, 'users', user.id));
+      if (currentUserDoc.exists()) {
+        const userData = currentUserDoc.data();
         
-        // Load therapists
-        if (data.therapists && Array.isArray(data.therapists)) {
-          const therapistList: Therapist[] = [];
-          
-          for (const therapistId of data.therapists) {
-            const userDoc = await getDoc(doc(db, 'users', therapistId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              
-              // Count patients for this therapist
-              const patientsQuery = query(
-                collection(db, 'users'),
-                where('therapistId', '==', therapistId),
-                where('role', '==', 'patient')
-              );
-              const patientsSnapshot = await getDocs(patientsQuery);
-              
-              therapistList.push({
-                id: therapistId,
-                name: userData.name || 'Unknown',
-                email: userData.email || '',
-                role: therapistId === data.ownerId ? 'owner' : 'therapist',
-                patientCount: patientsSnapshot.size,
-              });
+        // Count patients for this therapist
+        const bundlesQuery = query(collection(db, 'bundles'), where('createdBy', '==', user.id));
+        const bundlesSnapshot = await getDocs(bundlesQuery);
+        
+        let patientCount = 0;
+        bundlesSnapshot.docs.forEach(bundleDoc => {
+          const bundleData = bundleDoc.data();
+          patientCount += bundleData.assignedPatients?.length || 0;
+        });
+        
+        therapistsData.push({
+          id: user.id,
+          name: userData.name || userData.email || 'Unknown',
+          email: userData.email || '',
+          patientCount,
+          role: 'owner',
+        });
+      }
+
+      // Get other therapists in the clinic
+      if (clinic.therapists && clinic.therapists.length > 0) {
+        for (const therapistId of clinic.therapists) {
+          if (therapistId !== user.id) { // Skip the owner since we already added them
+            try {
+              const therapistDoc = await getDoc(doc(db, 'users', therapistId));
+              if (therapistDoc.exists()) {
+                const therapistData = therapistDoc.data();
+                
+                // Count patients for this therapist
+                const bundlesQuery = query(collection(db, 'bundles'), where('createdBy', '==', therapistId));
+                const bundlesSnapshot = await getDocs(bundlesQuery);
+                
+                let patientCount = 0;
+                bundlesSnapshot.docs.forEach(bundleDoc => {
+                  const bundleData = bundleDoc.data();
+                  patientCount += bundleData.assignedPatients?.length || 0;
+                });
+                
+                therapistsData.push({
+                  id: therapistId,
+                  name: therapistData.name || therapistData.email || 'Unknown',
+                  email: therapistData.email || '',
+                  patientCount,
+                  role: 'therapist',
+                });
+              }
+            } catch (error) {
+              console.error(`Error fetching therapist ${therapistId}:`, error);
             }
           }
-          
-          setTherapists(therapistList);
         }
       }
+      
+      setTherapists(therapistsData);
     } catch (error) {
-      console.error('[CLINIC] Error loading clinic data:', error);
-      Alert.alert('Error', 'Failed to load clinic information');
+      console.error('Error fetching therapists:', error);
+      showAlert('Error', 'Failed to load clinic data');
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateClinicName = async () => {
-    if (!clinicName.trim()) {
-      Alert.alert('Error', 'Clinic name cannot be empty');
+    if (!clinic || !clinicName.trim()) {
+      showAlert('Error', 'Please enter a clinic name');
       return;
     }
 
-    setSaving(true);
     try {
-      await updateDoc(doc(db, 'clinics', clinicId), {
+      const clinicRef = doc(db, 'clinics', clinic.id);
+      await updateDoc(clinicRef, {
         name: clinicName.trim(),
-        updatedAt: Timestamp.now(),
+        updatedAt: serverTimestamp(),
       });
-      Alert.alert('Success', 'Clinic name updated successfully');
+
+      showAlert('Success', 'Clinic name updated successfully');
+      onUpdate();
     } catch (error) {
-      console.error('[CLINIC] Error updating clinic name:', error);
-      Alert.alert('Error', 'Failed to update clinic name');
-    } finally {
-      setSaving(false);
+      console.error('Error updating clinic name:', error);
+      showAlert('Error', 'Failed to update clinic name');
     }
   };
 
   const handleInviteTherapist = async () => {
-    if (!inviteEmail.trim()) {
-      Alert.alert('Error', 'Please enter an email address');
+    if (!clinic || !inviteEmail.trim()) {
+      showAlert('Error', 'Please enter a valid email address');
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(inviteEmail)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
-    setSaving(true);
     try {
+      setInviting(true);
+      
       // Check if user exists
-      const usersQuery = query(
-        collection(db, 'users'),
-        where('email', '==', inviteEmail.toLowerCase().trim())
-      );
-      const usersSnapshot = await getDocs(usersQuery);
-
-      if (usersSnapshot.empty) {
-        Alert.alert(
-          'User Not Found',
-          'No user found with this email address. They need to register first.'
-        );
-        setSaving(false);
+      const usersQuery = query(collection(db, 'users'), where('email', '==', inviteEmail.trim()));
+      const userSnapshot = await getDocs(usersQuery);
+      
+      if (userSnapshot.empty) {
+        showAlert('Error', 'No user found with this email address');
         return;
       }
-
-      const targetUser = usersSnapshot.docs[0];
-      const targetUserData = targetUser.data();
-
-      if (targetUserData.role !== 'therapist') {
-        Alert.alert('Error', 'User is not registered as a therapist');
-        setSaving(false);
+      
+      const targetUser = userSnapshot.docs[0];
+      const userData = targetUser.data();
+      
+      if (userData.role !== 'therapist') {
+        showAlert('Error', 'This user is not a therapist');
         return;
       }
-
-      // Send invitation via notifications collection
-      await addDoc(collection(db, 'notifications'), {
-        userId: targetUser.id,
+      
+      // Create invitation
+      const invitation = {
         type: 'clinic_invitation',
-        title: 'Clinic Invitation',
-        message: `You've been invited to join ${clinicName}`,
-        clinicId: clinicId,
-        clinicName: clinicName,
-        invitedBy: userId,
-        read: false,
-        createdAt: Timestamp.now(),
-      });
-
-      Alert.alert('Success', 'Invitation sent successfully');
+        fromUserId: user?.id,
+        fromUserName: user?.name || 'Unknown',
+        toUserId: targetUser.id,
+        toUserEmail: inviteEmail.trim(),
+        clinicId: clinic.id,
+        clinicName: clinic.name,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      };
+      
+      await addDoc(collection(db, 'notifications'), invitation);
+      
+      showAlert('Success', 'Invitation sent successfully');
       setInviteEmail('');
     } catch (error) {
-      console.error('[CLINIC] Error inviting therapist:', error);
-      Alert.alert('Error', 'Failed to send invitation');
+      console.error('Error sending invitation:', error);
+      showAlert('Error', 'Failed to send invitation');
     } finally {
-      setSaving(false);
+      setInviting(false);
     }
   };
 
+  const isOwner = true; // Since this modal is only shown to clinic owners
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Clinic Management</Text>
+    <Modal visible={visible} transparent={false} animationType="slide">
+      <View style={[styles.modalContainer, { backgroundColor: colors.background.primary }]}>
+        <View style={styles.modalContent}>
+          <View style={[styles.header, { backgroundColor: colors.background.secondary }]}>
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              Clinic Management
+            </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#FFFFFF" />
+              <Ionicons name="close-circle" size={32} color="#e74c3c" />
             </TouchableOpacity>
           </View>
 
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#3B82F6" />
-            </View>
-          ) : (
-            <ScrollView style={styles.content}>
-              {/* Clinic Name Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Clinic Name</Text>
+          <ScrollView style={styles.content}>
+                         {/* Clinic Information */}
+             <View style={[styles.section, { backgroundColor: colors.background.secondary }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+                Clinic Information
+              </Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>
+                  Clinic Name
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { 
+                    color: colors.text.primary, 
+                    backgroundColor: colors.background.primary 
+                  }]}
                   value={clinicName}
                   onChangeText={setClinicName}
                   placeholder="Enter clinic name"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={colors.text.secondary}
                 />
-                <TouchableOpacity
-                  style={[styles.button, saving && styles.buttonDisabled]}
+                <Button
+                  title="Update Name"
                   onPress={handleUpdateClinicName}
-                  disabled={saving}
-                >
-                  <Text style={styles.buttonText}>
-                    {saving ? 'Updating...' : 'Update Name'}
-                  </Text>
-                </TouchableOpacity>
+                  variant="neon"
+                  size="small"
+                  style={styles.updateButton}
+                />
               </View>
+            </View>
 
-              {/* Therapists Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>
-                  Therapists ({therapists.length})
+            {/* Therapists */}
+            <View style={[styles.section, { backgroundColor: colors.background.secondary }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+                Therapists ({therapists.length})
+              </Text>
+              
+              {loading ? (
+                <ActivityIndicator size="large" color={colors.primary} />
+              ) : therapists.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.text.secondary }]}>
+                  No therapists in this clinic
                 </Text>
-                {therapists.map((therapist) => (
-                  <View key={therapist.id} style={styles.therapistCard}>
+              ) : (
+                therapists.map((therapist) => (
+                  <View key={therapist.id} style={styles.therapistItem}>
                     <View style={styles.therapistInfo}>
                       <View style={styles.therapistHeader}>
-                        <Text style={styles.therapistName}>{therapist.name}</Text>
-                        <View
-                          style={[
-                            styles.roleBadge,
-                            therapist.role === 'owner' && styles.ownerBadge,
-                          ]}
-                        >
-                          <Text style={styles.roleBadgeText}>
+                        <Text style={[styles.therapistName, { color: colors.text.primary }]}>
+                          {therapist.name}
+                        </Text>
+                        <View style={[
+                          styles.roleBadge, 
+                          { backgroundColor: therapist.role === 'owner' ? colors.success : colors.primary }
+                        ]}>
+                          <Text style={styles.roleText}>
                             {therapist.role === 'owner' ? 'Owner' : 'Therapist'}
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.therapistEmail}>{therapist.email}</Text>
-                      <Text style={styles.therapistStats}>
-                        {therapist.patientCount} patient{therapist.patientCount !== 1 ? 's' : ''}
+                      <Text style={[styles.therapistEmail, { color: colors.text.secondary }]}>
+                        {therapist.email}
+                      </Text>
+                    </View>
+                    <View style={styles.therapistStats}>
+                      <Ionicons name="people-outline" size={16} color={colors.primary} />
+                      <Text style={[styles.patientCount, { color: colors.text.secondary }]}>
+                        {therapist.patientCount} patients
                       </Text>
                     </View>
                   </View>
-                ))}
-              </View>
+                ))
+              )}
+            </View>
 
-              {/* Invite Therapist Section */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Invite Therapist</Text>
+            {/* Invite Therapists */}
+            <View style={[styles.section, { backgroundColor: colors.background.secondary }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+                Invite Therapists
+              </Text>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.text.primary }]}>
+                  Therapist Email
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { 
+                    color: colors.text.primary, 
+                    backgroundColor: colors.background.primary 
+                  }]}
                   value={inviteEmail}
                   onChangeText={setInviteEmail}
                   placeholder="Enter therapist email"
-                  placeholderTextColor="#6B7280"
+                  placeholderTextColor={colors.text.secondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
-                <TouchableOpacity
-                  style={[styles.button, styles.primaryButton, saving && styles.buttonDisabled]}
+                <Button
+                  title={inviting ? "Sending..." : "Send Invitation"}
                   onPress={handleInviteTherapist}
-                  disabled={saving}
-                >
-                  <Ionicons name="mail-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.buttonText}>
-                    {saving ? 'Sending...' : 'Send Invitation'}
-                  </Text>
-                </TouchableOpacity>
+                  variant="primary"
+                  size="small"
+                  style={styles.inviteButton}
+                  disabled={inviting}
+                />
               </View>
-            </ScrollView>
-          )}
+            </View>
+          </ScrollView>
+
+          <View style={[styles.footer, { backgroundColor: colors.background.secondary }]}>
+            <Button
+              title="Close"
+              onPress={onClose}
+              variant="outline"
+              size="medium"
+              style={styles.footerButton}
+            />
+          </View>
         </View>
       </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  container: {
-    width: '90%',
-    maxHeight: '80%',
-    backgroundColor: '#1F2937',
-    borderRadius: 16,
-    overflow: 'hidden',
+  modalContent: {
+    flex: 1,
+    padding: SPACING.lg,
+    paddingTop: 50,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#374151',
+    marginBottom: SPACING.xl,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  modalTitle: {
+    fontSize: FONTS.sizes.xl,
+    fontFamily: FONTS.bold,
   },
   closeButton: {
-    padding: 4,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: SPACING.xs,
   },
   content: {
-    padding: 20,
+    flex: 1,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#3498db',
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 12,
+    fontSize: FONTS.sizes.lg,
+    fontFamily: FONTS.bold,
+    marginBottom: SPACING.md,
+    borderBottomWidth: 2,
+    borderBottomColor: '#3498db',
+    paddingBottom: SPACING.sm,
+  },
+  inputGroup: {
+    marginBottom: SPACING.md,
+  },
+  inputLabel: {
+    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.medium,
+    marginBottom: SPACING.xs,
   },
   input: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    padding: 12,
-    color: '#FFFFFF',
-    fontSize: 14,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#3498db',
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    fontSize: FONTS.sizes.md,
+    fontFamily: FONTS.regular,
+    marginBottom: SPACING.sm,
   },
-  button: {
+  updateButton: {
+    marginTop: SPACING.xs,
+  },
+  inviteButton: {
+    marginTop: SPACING.xs,
+  },
+  therapistItem: {
     flexDirection: 'row',
-    backgroundColor: '#6B7280',
-    borderRadius: 8,
-    padding: 12,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#3B82F6',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  therapistCard: {
-    backgroundColor: '#374151',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    paddingVertical: SPACING.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(52, 152, 219, 0.2)',
+    marginBottom: SPACING.sm,
   },
   therapistInfo: {
     flex: 1,
@@ -383,35 +451,58 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  therapistName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    marginBottom: SPACING.xs,
   },
   roleBadge: {
-    backgroundColor: '#6B7280',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.sm,
   },
-  ownerBadge: {
-    backgroundColor: '#3B82F6',
+  roleText: {
+    fontSize: FONTS.sizes.xs,
+    fontFamily: FONTS.medium,
+    color: '#fff',
   },
-  roleBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  therapistName: {
+    fontSize: FONTS.sizes.md,
+    fontFamily: FONTS.bold,
+    marginBottom: SPACING.xs,
   },
   therapistEmail: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 4,
+    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.regular,
   },
   therapistStats: {
-    fontSize: 12,
-    color: '#6B7280',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  patientCount: {
+    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.medium,
+    marginLeft: SPACING.xs,
+  },
+  emptyText: {
+    fontSize: FONTS.sizes.md,
+    fontFamily: FONTS.regular,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  footer: {
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#3498db',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.lg,
+    shadowColor: '#3498db',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  footerButton: {
+    width: '100%',
   },
 });
 

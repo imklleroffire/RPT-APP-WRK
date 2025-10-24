@@ -1,74 +1,31 @@
-/**
- * Streaks Service - Complete Streak Calculation and Management Engine
- * Handles all streak-related operations including calculation, storage, and real-time updates
- */
-
-import {
-  collection,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  query,
-  where,
-  getDocs,
-  onSnapshot,
-  Timestamp,
-} from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { format, parseISO, startOfDay, differenceInDays, addDays } from 'date-fns';
-import type { StreakData, DailyCompletion, CompletedExercise } from '../types/streaks';
+import { doc, getDoc, setDoc, collection, query, where, getDocs, Timestamp, onSnapshot } from 'firebase/firestore';
+import { format, isSameDay, subDays } from 'date-fns';
+import { StreakData, DailyCompletion, CompletedExercise } from '../types/streaks';
 
-/**
- * Singleton service for managing streaks
- */
-class StreaksService {
+export class StreaksService {
   private static instance: StreaksService;
-  private updateQueue: Map<string, NodeJS.Timeout> = new Map();
+  private updateQueue: Set<string> = new Set();
+  private isUpdating = false;
 
-  private constructor() {}
-
-  public static getInstance(): StreaksService {
+  static getInstance(): StreaksService {
     if (!StreaksService.instance) {
       StreaksService.instance = new StreaksService();
     }
     return StreaksService.instance;
   }
 
-  /**
-   * Initialize streak data for a new user
-   */
+  // Initialize streak data for a user if it doesn't exist
   async initializeStreakData(userId: string): Promise<void> {
-    console.log('[STREAKS] Initializing streak data for user:', userId);
-    
     try {
-      const streakRef = doc(db, 'streaks', userId);
-      const streakDoc = await getDoc(streakRef);
-
-      if (!streakDoc.exists()) {
-        const initialData: Partial<StreakData> = {
-          userId,
-          currentStreak: 0,
-          longestStreak: 0,
-          lastActivityDate: null,
-          totalDaysActive: 0,
-          totalExercisesCompleted: 0,
-          averageCompletionRate: 0,
-          streakHistory: [],
-          lastUpdated: new Date(),
-        };
-
-        await setDoc(streakRef, {
-          ...initialData,
-          lastUpdated: Timestamp.now(),
-        });
-      }
-
-      // Initialize completedExercises document
+      console.log('[STREAKS] Initializing streak data for user:', userId);
+      
+      // Check if completedExercises document exists
       const completedRef = doc(db, 'completedExercises', userId);
       const completedDoc = await getDoc(completedRef);
-
+      
       if (!completedDoc.exists()) {
+        console.log('[STREAKS] Creating completedExercises document');
         await setDoc(completedRef, {
           userId,
           lastCompletedDate: null,
@@ -76,70 +33,90 @@ class StreaksService {
           updatedAt: Timestamp.now(),
         });
       }
-
-      console.log('[STREAKS] Initialization complete');
+      
+      // Check if streaks document exists
+      const streaksRef = doc(db, 'streaks', userId);
+      const streaksDoc = await getDoc(streaksRef);
+      
+      if (!streaksDoc.exists()) {
+        console.log('[STREAKS] Creating streaks document');
+        await setDoc(streaksRef, {
+          userId,
+          currentStreak: 0,
+          longestStreak: 0,
+          lastActivityDate: null,
+          streakHistory: [],
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+      }
+      
+      console.log('[STREAKS] Streak data initialization complete');
     } catch (error) {
-      console.error('[STREAKS] Error initializing:', error);
+      console.error('[STREAKS] Error initializing streak data:', error);
       throw error;
     }
   }
 
-  /**
-   * Get all exercises assigned to a user
-   */
-  async getAssignedExercises(userId: string): Promise<any[]> {
+  // Get all assigned exercises for a user
+  async getAssignedExercises(userId: string): Promise<CompletedExercise[]> {
     try {
-      const bundlesQuery = query(
-        collection(db, 'assignedBundles'),
-        where('patientId', '==', userId)
-      );
-
-      const snapshot = await getDocs(bundlesQuery);
-      const exercises: any[] = [];
-
-      snapshot.forEach((doc) => {
-        const bundle = doc.data();
-        if (bundle.exercises && Array.isArray(bundle.exercises)) {
-          bundle.exercises.forEach((exercise: any) => {
-            exercises.push({
-              ...exercise,
-              bundleId: doc.id,
-              bundleName: bundle.name || 'Unnamed Bundle',
-            });
+      const bundlesRef = collection(db, 'bundles');
+      const bundlesQuery = query(bundlesRef, where('assignedPatients', 'array-contains', userId));
+      const bundlesSnapshot = await getDocs(bundlesQuery);
+      
+      const assignedExercises: CompletedExercise[] = [];
+      
+      console.log('[STREAKS] Found bundles for user:', bundlesSnapshot.size);
+      
+      for (const bundleDoc of bundlesSnapshot.docs) {
+        const bundleData = bundleDoc.data();
+        const exercises = bundleData.exercises || [];
+        
+        console.log(`[STREAKS] Bundle "${bundleData.name}": ${exercises.length} exercises`);
+        
+        exercises.forEach((exercise: any) => {
+          assignedExercises.push({
+            exerciseId: exercise.id,
+            exerciseName: exercise.name,
+            bundleId: bundleDoc.id,
+            bundleName: bundleData.name,
+            completedAt: new Date(),
+            completed: false
           });
-        }
-      });
-
-      return exercises;
+        });
+      }
+      
+      console.log('[STREAKS] Total assigned exercises:', assignedExercises.length);
+      return assignedExercises;
     } catch (error) {
       console.error('[STREAKS] Error getting assigned exercises:', error);
       return [];
     }
   }
 
-  /**
-   * Get completed exercises for a specific date
-   */
+  // Get completed exercises for a specific date
   async getCompletedExercisesForDate(userId: string, date: Date): Promise<CompletedExercise[]> {
     try {
       const dateStr = format(date, 'yyyy-MM-dd');
       const completedRef = doc(db, 'completedExercises', userId);
       const completedDoc = await getDoc(completedRef);
-
+      
+      console.log('[STREAKS] Looking for completed exercises on:', dateStr);
+      
       if (!completedDoc.exists()) {
+        console.log('[STREAKS] No completed exercises document found');
         return [];
       }
-
+      
       const data = completedDoc.data();
-      const exercisesForDate = data[dateStr];
-
-      if (!exercisesForDate || !Array.isArray(exercisesForDate)) {
-        return [];
-      }
-
-      return exercisesForDate.map((ex: any) => ({
-        ...ex,
-        completedAt: this.safeParseDate(ex.completedAt),
+      const dailyData = data[dateStr] || [];
+      
+      console.log('[STREAKS] Found completed exercises for date:', dailyData.length);
+      
+      return dailyData.map((item: any) => ({
+        ...item,
+        completedAt: item.completedAt?.toDate() || new Date()
       }));
     } catch (error) {
       console.error('[STREAKS] Error getting completed exercises:', error);
@@ -147,336 +124,355 @@ class StreaksService {
     }
   }
 
-  /**
-   * Update completed exercises for a date and trigger recalculation
-   */
-  async updateCompletedExercises(
-    userId: string,
-    date: Date,
-    exercises: CompletedExercise[]
-  ): Promise<void> {
+  // Update completed exercises for a specific date
+  async updateCompletedExercises(userId: string, date: Date, exercises: CompletedExercise[]): Promise<void> {
     try {
-      // Convert to user's local timezone
+      // Use the user's local timezone to ensure consistent date handling
       const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
       const dateStr = format(localDate, 'yyyy-MM-dd');
-
-      console.log('[STREAKS] Updating exercises for date:', dateStr);
-
       const completedRef = doc(db, 'completedExercises', userId);
       
-      await updateDoc(completedRef, {
+      await setDoc(completedRef, {
         [dateStr]: exercises.map(ex => ({
           ...ex,
-          completedAt: Timestamp.fromDate(ex.completedAt),
-        })),
-        lastCompletedDate: Timestamp.fromDate(date),
-        updatedAt: Timestamp.now(),
-      });
-
-      // Queue streak recalculation
-      this.queueStreakUpdate(userId);
+          completedAt: Timestamp.fromDate(ex.completedAt)
+        }))
+      }, { merge: true });
+      
+      console.log('[STREAKS] Updated completed exercises for date:', dateStr);
+      console.log('[STREAKS] Original date:', date.toISOString());
+      console.log('[STREAKS] Local date:', localDate.toISOString());
+      console.log('[STREAKS] Date string used:', dateStr);
+      console.log('[STREAKS] Exercises completed:', exercises.filter(ex => ex.completed).length);
+      
+      // Immediately calculate streaks instead of queuing
+      await this.calculateAndUpdateStreaks(userId);
     } catch (error) {
       console.error('[STREAKS] Error updating completed exercises:', error);
-      throw error;
     }
   }
 
-  /**
-   * Main streak calculation algorithm
-   * Recalculates all streak data from first activity to today
-   */
+  // Queue a streak update to prevent spam
+  private queueStreakUpdate(userId: string): void {
+    this.updateQueue.add(userId);
+    
+    if (!this.isUpdating) {
+      this.processUpdateQueue();
+    }
+  }
+
+  // Process the update queue with debouncing
+  private async processUpdateQueue(): Promise<void> {
+    if (this.isUpdating || this.updateQueue.size === 0) return;
+    
+    this.isUpdating = true;
+    
+    // Wait a bit to collect multiple updates
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const userIds = Array.from(this.updateQueue);
+    this.updateQueue.clear();
+    
+    for (const userId of userIds) {
+      await this.calculateAndUpdateStreaks(userId);
+    }
+    
+    this.isUpdating = false;
+    
+    // Check if more updates came in while processing
+    if (this.updateQueue.size > 0) {
+      this.processUpdateQueue();
+    }
+  }
+
+  // Recalculate all streak data for a user
   async recalculateAllStreakData(userId: string): Promise<void> {
-    console.log('[STREAKS] Starting full recalculation for user:', userId);
-
     try {
-      // Get all assigned exercises
+      console.log('[STREAKS] Recalculating ALL streak data for user:', userId);
+      
       const assignedExercises = await this.getAssignedExercises(userId);
-      console.log('[STREAKS] Found assigned exercises:', assignedExercises.length);
-
-      if (assignedExercises.length === 0) {
-        console.log('[STREAKS] No assigned exercises, resetting streak data');
-        await this.resetStreakData(userId);
-        return;
-      }
-
-      // Get completed exercises data
+      
+      // Get all completed exercises data
       const completedRef = doc(db, 'completedExercises', userId);
       const completedDoc = await getDoc(completedRef);
-
-      if (!completedDoc.exists()) {
-        console.log('[STREAKS] No completed data found');
-        await this.resetStreakData(userId);
-        return;
-      }
-
-      const completedData = completedDoc.data();
       
-      // Find date range
-      const dateKeys = Object.keys(completedData).filter(key => 
-        key.match(/^\d{4}-\d{2}-\d{2}$/)
-      );
-
-      if (dateKeys.length === 0) {
+      let allCompletedData: { [date: string]: any[] } = {};
+      if (completedDoc.exists()) {
+        allCompletedData = completedDoc.data();
+        console.log('[STREAKS] Found completed exercises for dates:', Object.keys(allCompletedData));
+      }
+      
+      // Create new streak data
+      const streakData: StreakData = {
+        userId,
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActivityDate: null,
+        totalDaysActive: 0,
+        totalExercisesCompleted: 0,
+        averageCompletionRate: 0,
+        streakHistory: [],
+        lastUpdated: new Date()
+      };
+      
+      // Get all dates with activity (completed exercises)
+      const activityDates = Object.keys(allCompletedData).filter(key => 
+        key !== 'userId' && key !== 'lastCompletedDate' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'exercises'
+      ).sort();
+      
+      if (activityDates.length === 0) {
         console.log('[STREAKS] No activity dates found');
-        await this.resetStreakData(userId);
         return;
       }
-
-      const sortedDates = dateKeys.sort();
-      const firstDate = parseISO(sortedDates[0]);
-      const today = startOfDay(new Date());
-
-      console.log('[STREAKS] Date range:', format(firstDate, 'yyyy-MM-dd'), 'to', format(today, 'yyyy-MM-dd'));
-
-      // Build complete timeline
-      const streakHistory: DailyCompletion[] = [];
+      
+      // Create a complete timeline from first activity to today
+      const firstDate = new Date(activityDates[0] + 'T00:00:00');
+      const today = new Date();
+      const allDates: string[] = [];
+      
+      // Generate all dates from first activity to today
+      for (let d = new Date(firstDate); d <= today; d.setDate(d.getDate() + 1)) {
+        allDates.push(format(d, 'yyyy-MM-dd'));
+      }
+      
+      console.log('[STREAKS] Processing timeline from', activityDates[0], 'to', format(today, 'yyyy-MM-dd'));
+      console.log('[STREAKS] Total dates to process:', allDates.length);
+      
       let currentStreak = 0;
       let longestStreak = 0;
-      let totalDaysActive = 0;
-      let totalExercisesCompleted = 0;
-      let previousDayComplete = false;
-
-      let currentDate = firstDate;
-      while (currentDate <= today) {
-        const dateStr = format(currentDate, 'yyyy-MM-dd');
-        const completedForDate = completedData[dateStr] || [];
-
+      let lastActivityDate: Date | null = null;
+      
+      for (const dateStr of allDates) {
+        const completedExercises = allCompletedData[dateStr] || [];
         const totalAssigned = assignedExercises.length;
-        const totalCompleted = completedForDate.length;
-        const completionRate = totalAssigned > 0 
-          ? Math.round((totalCompleted / totalAssigned) * 100) 
-          : 0;
-        const allExercisesCompleted = totalCompleted > 0 && totalCompleted >= totalAssigned;
-
-        // Determine streak status
-        let streakStatus: 'maintained' | 'started' | 'broken' | 'none' = 'none';
-
-        if (allExercisesCompleted) {
-          if (previousDayComplete) {
-            streakStatus = 'maintained';
-            currentStreak++;
-          } else {
-            streakStatus = 'started';
-            currentStreak = 1;
-          }
-          previousDayComplete = true;
-          totalDaysActive++;
-          totalExercisesCompleted += totalCompleted;
-        } else {
-          if (previousDayComplete && totalCompleted === 0) {
-            streakStatus = 'broken';
-          }
-          previousDayComplete = false;
-          currentStreak = 0;
-        }
-
-        if (currentStreak > longestStreak) {
-          longestStreak = currentStreak;
-        }
-
-        streakHistory.push({
+        const totalCompleted = completedExercises.filter((ex: any) => ex.completed).length;
+        const completionRate = totalAssigned > 0 ? (totalCompleted / totalAssigned) * 100 : 0;
+        const allExercisesCompleted = totalCompleted === totalAssigned && totalAssigned > 0;
+        
+        console.log(`[STREAKS] Date ${dateStr}: ${totalCompleted}/${totalAssigned} (${Math.round(completionRate)}%)`);
+        
+        const dailyCompletion: DailyCompletion = {
           date: dateStr,
-          exercises: completedForDate.map((ex: any) => ({
+          exercises: completedExercises.map((ex: any) => ({
             ...ex,
-            completedAt: this.safeParseDate(ex.completedAt),
+            completedAt: ex.completedAt?.toDate() || new Date()
           })),
           totalAssigned,
           totalCompleted,
           completionRate,
-          streakStatus,
-          allExercisesCompleted,
-        });
-
-        currentDate = addDays(currentDate, 1);
+          streakStatus: 'none',
+          allExercisesCompleted
+        };
+        
+        // Determine streak status
+        const currentDate = new Date(dateStr + 'T00:00:00');
+        const previousDate = lastActivityDate ? new Date(lastActivityDate) : null;
+        
+        if (allExercisesCompleted) {
+          if (previousDate && isSameDay(previousDate, subDays(currentDate, 1))) {
+            // Continue streak (yesterday was active)
+            currentStreak += 1;
+            dailyCompletion.streakStatus = 'maintained';
+            console.log(`[STREAKS] Continuing streak: ${currentStreak}`);
+          } else {
+            // Start new streak (gap or first day)
+            currentStreak = 1;
+            dailyCompletion.streakStatus = 'started';
+            console.log(`[STREAKS] Starting new streak: ${currentStreak}`);
+          }
+          lastActivityDate = currentDate;
+        } else if (currentStreak > 0 && previousDate && isSameDay(previousDate, subDays(currentDate, 1))) {
+          // Break streak (had streak yesterday, didn't complete today)
+          currentStreak = 0;
+          dailyCompletion.streakStatus = 'broken';
+          console.log(`[STREAKS] Breaking streak on ${dateStr}`);
+        } else if (currentStreak > 0 && previousDate && !isSameDay(previousDate, subDays(currentDate, 1))) {
+          // Streak already broken due to gap
+          currentStreak = 0;
+          dailyCompletion.streakStatus = 'broken';
+          console.log(`[STREAKS] Streak already broken due to gap on ${dateStr}`);
+        }
+        
+        longestStreak = Math.max(currentStreak, longestStreak);
+        streakData.streakHistory.push(dailyCompletion);
       }
-
-      // Calculate average completion rate
-      const activeDays = streakHistory.filter(h => h.totalCompleted > 0);
-      const averageCompletionRate = activeDays.length > 0
-        ? Math.round(activeDays.reduce((sum, h) => sum + h.completionRate, 0) / activeDays.length)
+      
+      // Update final streak data
+      streakData.currentStreak = currentStreak;
+      streakData.longestStreak = longestStreak;
+      streakData.lastActivityDate = lastActivityDate;
+      
+      // Calculate additional stats with safe array operations
+      const activeDays = streakData.streakHistory.filter(h => h && h.totalCompleted > 0).length;
+      const totalExercises = streakData.streakHistory.length > 0 
+        ? streakData.streakHistory.reduce((sum, h) => sum + (h?.totalCompleted || 0), 0)
         : 0;
-
-      // Find last activity date
-      const lastActivityEntry = streakHistory.reverse().find(h => h.totalCompleted > 0);
-      const lastActivityDate = lastActivityEntry ? parseISO(lastActivityEntry.date) : null;
-
+      const avgCompletion = streakData.streakHistory.length > 0 
+        ? streakData.streakHistory.reduce((sum, h) => sum + (h?.completionRate || 0), 0) / streakData.streakHistory.length 
+        : 0;
+      
+      streakData.totalDaysActive = activeDays;
+      streakData.totalExercisesCompleted = totalExercises;
+      streakData.averageCompletionRate = avgCompletion;
+      
       // Save to Firestore
       const streakRef = doc(db, 'streaks', userId);
       await setDoc(streakRef, {
-        userId,
-        currentStreak,
-        longestStreak,
-        lastActivityDate: lastActivityDate ? Timestamp.fromDate(lastActivityDate) : null,
-        totalDaysActive,
-        totalExercisesCompleted,
-        averageCompletionRate,
-        streakHistory: streakHistory.reverse(), // Back to chronological order
-        lastUpdated: Timestamp.now(),
+        ...streakData,
+        lastActivityDate: streakData.lastActivityDate ? Timestamp.fromDate(streakData.lastActivityDate) : null,
+        lastUpdated: Timestamp.fromDate(streakData.lastUpdated),
+        streakHistory: streakData.streakHistory.map(h => ({
+          ...h,
+          exercises: h.exercises.map(ex => ({
+            ...ex,
+            completedAt: Timestamp.fromDate(ex.completedAt)
+          }))
+        }))
       });
-
-      console.log('[STREAKS] Recalculation complete:', {
-        currentStreak,
-        longestStreak,
-        totalDaysActive,
-        averageCompletionRate,
-      });
+      
+      console.log('[STREAKS] Recalculation complete!');
+      console.log('[STREAKS] Current streak:', currentStreak);
+      console.log('[STREAKS] Longest streak:', longestStreak);
+      console.log('[STREAKS] Total history entries:', streakData.streakHistory.length);
+      
     } catch (error) {
-      console.error('[STREAKS] Error in recalculation:', error);
-      throw error;
+      console.error('[STREAKS] Error recalculating streak data:', error);
     }
   }
 
-  /**
-   * Reset streak data to initial state
-   */
-  private async resetStreakData(userId: string): Promise<void> {
-    const streakRef = doc(db, 'streaks', userId);
-    await setDoc(streakRef, {
-      userId,
-      currentStreak: 0,
-      longestStreak: 0,
-      lastActivityDate: null,
-      totalDaysActive: 0,
-      totalExercisesCompleted: 0,
-      averageCompletionRate: 0,
-      streakHistory: [],
-      lastUpdated: Timestamp.now(),
-    });
+  // Calculate and update streaks for a user (legacy function)
+  async calculateAndUpdateStreaks(userId: string): Promise<void> {
+    try {
+      console.log('[STREAKS] Calculating streaks for user:', userId);
+      
+      // Use the improved recalculateAllStreakData function instead
+      await this.recalculateAllStreakData(userId);
+      
+    } catch (error) {
+      console.error('[STREAKS] Error calculating streaks:', error);
+    }
   }
 
-  /**
-   * Get streak data for a user
-   */
+  // Get streak data for a user
   async getStreakData(userId: string): Promise<StreakData | null> {
     try {
       const streakRef = doc(db, 'streaks', userId);
       const streakDoc = await getDoc(streakRef);
-
+      
       if (!streakDoc.exists()) {
         return null;
       }
-
+      
       const data = streakDoc.data();
       
+      // Safely parse dates with validation
+      const safeParseDate = (timestamp: any): Date | null => {
+        try {
+          if (!timestamp) return null;
+          if (timestamp && typeof timestamp.toDate === 'function') {
+            return timestamp.toDate();
+          }
+          if (timestamp && timestamp.seconds) {
+            return new Date(timestamp.seconds * 1000);
+          }
+          if (timestamp && typeof timestamp === 'string') {
+            const parsed = new Date(timestamp);
+            if (!isNaN(parsed.getTime())) {
+              return parsed;
+            }
+          }
+          return new Date();
+        } catch (error) {
+          console.error('[STREAKS] Error parsing date:', error);
+          return new Date();
+        }
+      };
+
       return {
-        userId: data.userId,
+        userId: data.userId || userId,
         currentStreak: data.currentStreak || 0,
         longestStreak: data.longestStreak || 0,
-        lastActivityDate: this.safeParseDate(data.lastActivityDate),
+        lastActivityDate: safeParseDate(data.lastActivityDate),
         totalDaysActive: data.totalDaysActive || 0,
         totalExercisesCompleted: data.totalExercisesCompleted || 0,
         averageCompletionRate: data.averageCompletionRate || 0,
-        streakHistory: (data.streakHistory || []).map((h: any) => ({
-          ...h,
-          exercises: (h.exercises || []).map((ex: any) => ({
+        lastUpdated: safeParseDate(data.lastUpdated) || new Date(),
+        streakHistory: (data.streakHistory || []).map((item: any) => ({
+          ...item,
+          date: item.date || format(new Date(), 'yyyy-MM-dd'),
+          exercises: (item.exercises || []).map((ex: any) => ({
             ...ex,
-            completedAt: this.safeParseDate(ex.completedAt),
-          })),
-        })),
-        lastUpdated: this.safeParseDate(data.lastUpdated),
-      };
+            completedAt: safeParseDate(ex.completedAt) || new Date()
+          }))
+        }))
+      } as StreakData;
     } catch (error) {
       console.error('[STREAKS] Error getting streak data:', error);
       return null;
     }
   }
 
-  /**
-   * Listen to real-time streak data changes
-   */
-  listenToStreakData(
-    userId: string,
-    callback: (data: StreakData | null) => void
-  ): () => void {
+  // Listen to streak data changes
+  listenToStreakData(userId: string, callback: (data: StreakData | null) => void): () => void {
     const streakRef = doc(db, 'streaks', userId);
+    
+    return onSnapshot(streakRef, (doc) => {
+      try {
+        if (doc.exists()) {
+          const data = doc.data();
+          
+          // Safely parse dates with validation
+          const safeParseDate = (timestamp: any): Date | null => {
+            try {
+              if (!timestamp) return null;
+              if (timestamp && typeof timestamp.toDate === 'function') {
+                return timestamp.toDate();
+              }
+              if (timestamp && timestamp.seconds) {
+                return new Date(timestamp.seconds * 1000);
+              }
+              if (timestamp && typeof timestamp === 'string') {
+                const parsed = new Date(timestamp);
+                if (!isNaN(parsed.getTime())) {
+                  return parsed;
+                }
+              }
+              return new Date();
+            } catch (error) {
+              console.error('[STREAKS] Error parsing date:', error);
+              return new Date();
+            }
+          };
 
-    const unsubscribe = onSnapshot(streakRef, (doc) => {
-      if (!doc.exists()) {
+          const streakData: StreakData = {
+            userId: data.userId || userId,
+            currentStreak: data.currentStreak || 0,
+            longestStreak: data.longestStreak || 0,
+            lastActivityDate: safeParseDate(data.lastActivityDate),
+            totalDaysActive: data.totalDaysActive || 0,
+            totalExercisesCompleted: data.totalExercisesCompleted || 0,
+            averageCompletionRate: data.averageCompletionRate || 0,
+            lastUpdated: safeParseDate(data.lastUpdated) || new Date(),
+            streakHistory: (data.streakHistory || []).map((item: any) => ({
+              ...item,
+              date: item.date || format(new Date(), 'yyyy-MM-dd'),
+              exercises: (item.exercises || []).map((ex: any) => ({
+                ...ex,
+                completedAt: safeParseDate(ex.completedAt) || new Date()
+              }))
+            }))
+          };
+          callback(streakData);
+        } else {
+          callback(null);
+        }
+      } catch (error) {
+        console.error('[STREAKS] Error in listenToStreakData:', error);
         callback(null);
-        return;
       }
-
-      const data = doc.data();
-      
-      const streakData: StreakData = {
-        userId: data.userId,
-        currentStreak: data.currentStreak || 0,
-        longestStreak: data.longestStreak || 0,
-        lastActivityDate: this.safeParseDate(data.lastActivityDate),
-        totalDaysActive: data.totalDaysActive || 0,
-        totalExercisesCompleted: data.totalExercisesCompleted || 0,
-        averageCompletionRate: data.averageCompletionRate || 0,
-        streakHistory: (data.streakHistory || []).map((h: any) => ({
-          ...h,
-          exercises: (h.exercises || []).map((ex: any) => ({
-            ...ex,
-            completedAt: this.safeParseDate(ex.completedAt),
-          })),
-        })),
-        lastUpdated: this.safeParseDate(data.lastUpdated),
-      };
-
-      callback(streakData);
-    }, (error) => {
-      console.error('[STREAKS] Error in listener:', error);
-      callback(null);
     });
-
-    return unsubscribe;
-  }
-
-  /**
-   * Queue a streak update with debouncing to prevent spam
-   */
-  private queueStreakUpdate(userId: string): void {
-    // Cancel existing timeout
-    const existingTimeout = this.updateQueue.get(userId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-    }
-
-    // Queue new update
-    const timeout = setTimeout(() => {
-      this.recalculateAllStreakData(userId);
-      this.updateQueue.delete(userId);
-    }, 2000); // 2 second delay
-
-    this.updateQueue.set(userId, timeout);
-  }
-
-  /**
-   * Safely parse various date formats from Firestore
-   */
-  private safeParseDate(timestamp: any): Date {
-    if (!timestamp) return new Date();
-    
-    // Firestore Timestamp with toDate method
-    if (timestamp && typeof timestamp.toDate === 'function') {
-      return timestamp.toDate();
-    }
-    
-    // Firestore Timestamp with seconds
-    if (timestamp && timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000);
-    }
-    
-    // String date
-    if (timestamp && typeof timestamp === 'string') {
-      const parsed = new Date(timestamp);
-      if (!isNaN(parsed.getTime())) {
-        return parsed;
-      }
-    }
-    
-    // Date object
-    if (timestamp instanceof Date) {
-      return timestamp;
-    }
-    
-    return new Date();
   }
 }
 
-// Export singleton instance
 export const streaksService = StreaksService.getInstance();
 

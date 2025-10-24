@@ -1,93 +1,223 @@
-/**
- * Simple Streak Calendar Component
- * Simplified calendar with dot indicators for streak status
- */
-
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import { format, parseISO } from 'date-fns';
-import type { DailyCompletion } from '../types/streaks';
+import { format, isSameDay } from 'date-fns';
+import { useTheme } from '../context/ThemeContext';
+import { DailyCompletion } from '../types/streaks';
 
-interface Props {
+interface SimpleStreakCalendarProps {
   streakHistory: DailyCompletion[];
   onDayPress?: (date: string) => void;
 }
 
-export const SimpleStreakCalendar: React.FC<Props> = ({
-  streakHistory,
-  onDayPress,
-}) => {
-  const markedDates = useMemo(() => {
-    if (!streakHistory || streakHistory.length === 0) {
-      return {};
+export function SimpleStreakCalendar({ streakHistory, onDayPress }: SimpleStreakCalendarProps) {
+  const { colors } = useTheme();
+
+  const getMarkedDates = () => {
+    const markedDates: { [date: string]: any } = {};
+    const today = new Date();
+
+    // Validate streakHistory exists and is an array
+    if (!streakHistory || !Array.isArray(streakHistory)) {
+      console.warn('[STREAKS] Invalid streakHistory for calendar:', streakHistory);
+      return markedDates;
     }
 
-    const marks: Record<string, any> = {};
-
-    streakHistory.forEach((day) => {
+    streakHistory.forEach((history, index) => {
       try {
-        const dayDate = parseISO(day.date);
-        const dateStr = format(dayDate, 'yyyy-MM-dd');
-
-        let dotColor = '#6B7280'; // Grey
-
-        if (day.allExercisesCompleted) {
-          dotColor = '#10B981'; // Green - maintained
-        } else if (day.streakStatus === 'broken') {
-          dotColor = '#EF4444'; // Red - broken
+        // Validate history object
+        if (!history || !history.date) {
+          console.warn('[STREAKS] Invalid history item at index', index, history);
+          return;
         }
 
-        marks[dateStr] = {
+        // Try multiple date parsing approaches
+        let date: Date;
+        if (typeof history.date === 'string') {
+          date = new Date(history.date);
+        } else if (history.date instanceof Date) {
+          date = history.date;
+        } else if (history.date && typeof history.date.toDate === 'function') {
+          // Firestore timestamp
+          date = history.date.toDate();
+        } else {
+          console.warn('[STREAKS] Unsupported date format at index', index, history.date);
+          return;
+        }
+
+        if (isNaN(date.getTime())) {
+          console.error('[STREAKS] Invalid date in history for calendar:', history.date);
+          return;
+        }
+        
+        const dateStr = format(date, 'yyyy-MM-dd');
+        
+        let dotColor = colors.text.secondary; // Default gray
+        let selectedColor = colors.background.secondary;
+        let textColor = colors.text.primary;
+
+        switch (history.streakStatus) {
+          case 'maintained':
+          case 'started':
+            dotColor = colors.success; // Green
+            selectedColor = colors.success;
+            textColor = '#fff';
+            break;
+          case 'broken':
+            dotColor = colors.error; // Red
+            selectedColor = colors.error;
+            textColor = '#fff';
+            break;
+          case 'none':
+            dotColor = colors.text.secondary; // Gray
+            selectedColor = colors.background.secondary;
+            textColor = colors.text.secondary;
+            break;
+        }
+
+        markedDates[dateStr] = {
           marked: true,
           dotColor,
+          selected: isSameDay(date, today),
+          selectedColor,
+          customStyles: {
+            container: {
+              backgroundColor: selectedColor,
+              borderRadius: 8,
+            },
+            text: {
+              color: textColor,
+              fontWeight: 'bold',
+            },
+          },
         };
       } catch (error) {
-        console.error('[CALENDAR] Error processing date:', day.date, error);
+        console.error('[STREAKS] Error processing history for calendar:', error);
       }
     });
 
-    return marks;
-  }, [streakHistory]);
+    return markedDates;
+  };
+
+  // Check if we have valid streak history
+  const hasValidHistory = streakHistory && Array.isArray(streakHistory) && streakHistory.length > 0;
+  
+  if (!hasValidHistory) {
+    // Fallback to basic calendar without custom components
+    return (
+      <View style={styles.container}>
+        <Calendar
+          theme={{
+            backgroundColor: colors.background.primary,
+            calendarBackground: colors.background.primary,
+            textSectionTitleColor: colors.text.primary,
+            selectedDayBackgroundColor: colors.primary,
+            selectedDayTextColor: colors.background.primary,
+            todayTextColor: colors.primary,
+            dayTextColor: colors.text.primary,
+            textDisabledColor: colors.text.secondary,
+            dotColor: colors.success,
+            selectedDotColor: colors.background.primary,
+            arrowColor: colors.primary,
+            monthTextColor: colors.text.primary,
+            indicatorColor: colors.primary,
+            textDayFontWeight: '400',
+            textMonthFontWeight: 'bold',
+            textDayHeaderFontWeight: '600',
+          }}
+          onDayPress={onDayPress}
+        />
+        <View style={styles.fallbackMessage}>
+          <Text style={[styles.fallbackText, { color: colors.text.secondary }]}>
+            Complete some exercises to see your streak progress!
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Calendar
-        markedDates={markedDates}
-        onDayPress={(day) => onDayPress?.(day.dateString)}
+        markedDates={getMarkedDates()}
         theme={{
-          calendarBackground: '#1F2937',
-          textSectionTitleColor: '#9CA3AF',
-          todayTextColor: '#3B82F6',
-          dayTextColor: '#D1D5DB',
-          textDisabledColor: '#4B5563',
-          monthTextColor: '#FFFFFF',
+          backgroundColor: colors.background.primary,
+          calendarBackground: colors.background.primary,
+          textSectionTitleColor: colors.text.primary,
+          selectedDayBackgroundColor: colors.primary,
+          selectedDayTextColor: colors.background.primary,
+          todayTextColor: colors.primary,
+          dayTextColor: colors.text.primary,
+          textDisabledColor: colors.text.secondary,
+          dotColor: colors.success,
+          selectedDotColor: colors.background.primary,
+          arrowColor: colors.primary,
+          monthTextColor: colors.text.primary,
+          indicatorColor: colors.primary,
+          textDayFontWeight: '400',
+          textMonthFontWeight: 'bold',
+          textDayHeaderFontWeight: '600',
         }}
+        onDayPress={onDayPress}
       />
       
+      {/* Legend */}
       <View style={styles.legend}>
-        <Text style={styles.legendTitle}>🔥 Maintained 🚀 ❌ Broken 😐 No Activity</Text>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>
+            🔥 Streak maintained/started
+          </Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.error }]} />
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>
+            ❌ Streak broken
+          </Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.legendDot, { backgroundColor: colors.text.secondary }]} />
+          <Text style={[styles.legendText, { color: colors.text.primary }]}>
+            😐 No activity
+          </Text>
+        </View>
       </View>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    backgroundColor: '#1F2937',
-    borderRadius: 12,
-    marginVertical: 16,
+    flex: 1,
   },
-  legend: {
-    marginTop: 12,
-    padding: 8,
+  fallbackMessage: {
+    padding: 20,
     alignItems: 'center',
   },
-  legendTitle: {
-    fontSize: 12,
-    color: '#D1D5DB',
+  fallbackText: {
+    fontSize: 16,
     textAlign: 'center',
+    lineHeight: 24,
+  },
+  legend: {
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  legendText: {
+    fontSize: 14,
   },
 });
 

@@ -145,8 +145,12 @@ export default function PatientHomeScreen() {
             {user?.name || 'Patient'}
           </Text>
         </View>
+      </View>
+
+      {/* Notifications section with better positioning */}
+      <View style={styles.notificationsSection}>
         <TouchableOpacity
-          style={[styles.notificationButton, { backgroundColor: colors.background.primary }]}
+          style={[styles.notificationCard, { backgroundColor: colors.background.secondary }]}
           onPress={() => {
             console.log('[PATIENT_HOME] Notification button pressed');
             console.log('[PATIENT_HOME] Current notifications:', notifications);
@@ -154,14 +158,24 @@ export default function PatientHomeScreen() {
             router.push('/notifications');
           }}
         >
-          <Ionicons name="notifications" size={24} color={colors.primary} />
-          {unreadCount > 0 && (
-            <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
-              <Text style={styles.notificationBadgeText}>
-                {unreadCount > 99 ? '99+' : unreadCount}
+          <View style={styles.notificationContent}>
+            <Ionicons name="notifications" size={24} color={colors.primary} />
+            <View style={styles.notificationText}>
+              <Text style={[styles.notificationTitle, { color: colors.text.primary }]}>
+                Notifications
+              </Text>
+              <Text style={[styles.notificationSubtitle, { color: colors.text.secondary }]}>
+                {unreadCount > 0 ? `${unreadCount} unread` : 'No new notifications'}
               </Text>
             </View>
-          )}
+            {unreadCount > 0 && (
+              <View style={[styles.notificationBadge, { backgroundColor: colors.error }]}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -384,9 +398,37 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  notificationButton: {
-    padding: 10,
-    borderRadius: 20,
+  notificationsSection: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+  },
+  notificationCard: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationText: {
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  notificationTitle: {
+    fontSize: FONTS.sizes.md,
+    fontFamily: FONTS.bold,
+    marginBottom: SPACING.xs,
+  },
+  notificationSubtitle: {
+    fontSize: FONTS.sizes.sm,
+    fontFamily: FONTS.regular,
   },
   section: {
     padding: 20,

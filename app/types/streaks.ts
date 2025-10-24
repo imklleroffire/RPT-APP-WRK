@@ -1,11 +1,3 @@
-/**
- * Streak System Type Definitions
- * Part of the comprehensive streak tracking system
- */
-
-/**
- * Represents a single completed exercise
- */
 export interface CompletedExercise {
   exerciseId: string;
   exerciseName: string;
@@ -15,9 +7,6 @@ export interface CompletedExercise {
   completed: boolean;
 }
 
-/**
- * Represents daily completion data with streak status
- */
 export interface DailyCompletion {
   date: string; // YYYY-MM-DD format
   exercises: CompletedExercise[];
@@ -28,9 +17,6 @@ export interface DailyCompletion {
   allExercisesCompleted: boolean;
 }
 
-/**
- * Main streak data structure stored in Firestore
- */
 export interface StreakData {
   userId: string;
   currentStreak: number;
@@ -43,45 +29,37 @@ export interface StreakData {
   lastUpdated: Date;
 }
 
-/**
- * Extended statistics for streak analysis
- */
 export interface StreakStats {
   currentStreak: number;
   longestStreak: number;
   totalDaysActive: number;
   totalExercisesCompleted: number;
   averageCompletionRate: number;
-  lastActivityDate: Date | null;
-  streakStartDate: Date | null;
-  daysUntilNextMilestone: number;
-  nextMilestone: number;
+  streakPercentage: number; // Percentage of days with streaks
+  bestWeek: {
+    startDate: string;
+    endDate: string;
+    exercisesCompleted: number;
+  };
+  currentWeekProgress: {
+    exercisesCompleted: number;
+    totalAssigned: number;
+    completionRate: number;
+  };
 }
 
-/**
- * Achievement system for gamification
- */
+export type StreakEmoji = '🔥' | '❌' | '😐' | '🎯' | '💪' | '🏆';
+
 export interface StreakAchievement {
   id: string;
-  title: string;
+  name: string;
   description: string;
-  icon: string;
-  unlockedAt: Date | null;
-  progress: number; // 0-100
-  requirement: number;
-}
-
-/**
- * Calendar marking data for react-native-calendars
- */
-export interface CalendarMarking {
-  selected?: boolean;
-  marked?: boolean;
-  selectedColor?: string;
-  dotColor?: string;
-  customStyles?: {
-    container?: any;
-    text?: any;
+  emoji: StreakEmoji;
+  unlocked: boolean;
+  unlockedDate?: Date;
+  requirement: {
+    type: 'streak_days' | 'total_exercises' | 'completion_rate' | 'perfect_week';
+    value: number;
   };
 }
 

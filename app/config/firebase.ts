@@ -15,11 +15,22 @@ const firebaseConfig = {
   measurementId: "G-H9KQD99PLQ"
 };
 
-// Initialize Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+// Initialize Firebase with error handling
+let app;
+let auth;
+let db;
+let storage;
 
-// Initialize and export services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-export { app }; 
+try {
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  console.log('[FIREBASE] Successfully initialized');
+} catch (error) {
+  console.error('[FIREBASE] Initialization error:', error);
+  // Re-throw to make the error visible
+  throw new Error(`Firebase initialization failed: ${error}`);
+}
+
+export { app, auth, db, storage }; 

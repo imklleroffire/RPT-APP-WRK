@@ -1,0 +1,104 @@
+===========================================
+📱 iOS APP STORE PUBLISHING - COMMANDS
+===========================================
+
+⏱️  Total Time: 2-3 hours today + 2-3 days Apple review
+📍 Current Directory: C:\Users\ruhan\Downloads\RPT-APP-main-main\RPT-APP-main-main
+
+===========================================
+STEP 1: SETUP EAS (5 minutes - FIRST TIME ONLY)
+===========================================
+
+npm install -g eas-cli
+eas login
+eas init
+
+===========================================
+STEP 2: BUILD FOR APP STORE (30 min build time)
+===========================================
+
+eas build --platform ios --profile production
+
+⏳ Wait 20-30 minutes. Check: https://expo.dev
+
+===========================================
+STEP 3: SUBMIT TO APP STORE (2 minutes)
+===========================================
+
+eas submit --platform ios --latest
+
+===========================================
+ALTERNATIVE: TESTFLIGHT (Faster - 24hrs)
+===========================================
+
+eas build --platform ios --profile preview
+eas submit --platform ios --latest
+
+===========================================
+WHILE WAITING - DO THESE:
+===========================================
+
+1. Create App Store Connect listing:
+   → https://appstoreconnect.apple.com
+   → My Apps → + → New App
+   → Bundle ID: com.amtkumar.rptapp
+
+2. Take screenshots:
+   → Open app on iPhone
+   → Screenshot key screens
+   → Need minimum 2 screenshots
+
+3. Create privacy policy:
+   → https://www.privacypolicygenerator.info/
+   → Create GitHub Gist with policy
+   → Copy URL for App Store
+
+4. Create test accounts in Firebase:
+   → testtherapist@test.com / Test1234!
+   → testpatient@test.com / Test1234!
+
+===========================================
+IMPORTANT URLS:
+===========================================
+
+App Store Connect: https://appstoreconnect.apple.com
+EAS Builds: https://expo.dev/accounts/YOUR_USERNAME/projects/rpt-app/builds
+Privacy Policy Generator: https://www.privacypolicygenerator.info/
+Screenshot Tool: https://screenshot.rocks/
+
+===========================================
+METADATA FOR APP STORE:
+===========================================
+
+App Name: RPT App
+Subtitle: Physical Therapy & Rehabilitation
+Category: Medical, Health & Fitness
+Price: Free
+Keywords: physical therapy,rehab,exercise,therapist,patient
+
+Description: See PUBLISH_NOW.md for full text
+
+===========================================
+TROUBLESHOOTING:
+===========================================
+
+Build Failed?
+→ eas build --platform ios --profile production --clear-cache
+
+Can't Submit?
+→ Check Apple Developer membership is active
+→ Verify bundle ID matches: com.amtkumar.rptapp
+
+Need Help?
+→ Read: APP_STORE_PUBLISHING_GUIDE.md (full guide)
+→ Read: PUBLISH_NOW.md (quick start)
+→ Expo Discord: https://discord.gg/expo
+
+===========================================
+✅ YOUR APP IS READY TO PUBLISH!
+===========================================
+
+Next: Run the commands above and follow PUBLISH_NOW.md
+
+Good luck! 🚀
+

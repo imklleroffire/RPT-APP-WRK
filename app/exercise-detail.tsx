@@ -13,7 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useAuth } from './context/AuthContext';
 import { db } from './config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { AssignedExercise } from './patient-detail';
+import { AssignedExercise } from './types';
 
 export default function ExerciseDetailScreen() {
   const { exerciseId } = useLocalSearchParams();

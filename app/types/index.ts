@@ -87,4 +87,13 @@ export interface NewBundle extends Omit<Bundle, 'id' | 'createdAt' | 'updatedAt'
   id?: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+// Assigned exercise type with additional tracking fields
+export interface AssignedExercise extends Exercise {
+  notes?: string;
+  defaultSets?: number;
+  defaultReps?: number;
+  defaultHoldTime?: number;
+  status: 'completed' | 'pending' | 'skipped';
 } 

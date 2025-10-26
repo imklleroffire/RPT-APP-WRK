@@ -379,82 +379,6 @@ export default function StreaksScreen() {
     return weeklyStats;
   };
 
-  const getMarkedDates = () => {
-    if (!streakData || !streakData.streakHistory) return {};
-
-    const markedDates: { [date: string]: any } = {};
-    // Use local timezone for today to ensure consistent comparison
-    const today = new Date();
-    const localToday = new Date(today.getTime() - (today.getTimezoneOffset() * 60000));
-
-    // Validate streakHistory is an array
-    if (!Array.isArray(streakData.streakHistory)) {
-      console.warn('[STREAKS] streakHistory is not an array:', streakData.streakHistory);
-      return markedDates;
-    }
-
-    streakData.streakHistory.forEach((history, index) => {
-      try {
-        // Validate history object
-        if (!history || !history.date) {
-          console.warn('[STREAKS] Invalid history item at index', index, history);
-          return;
-        }
-        
-        const date = new Date(history.date + 'T00:00:00');
-        if (isNaN(date.getTime())) {
-          console.error('[STREAKS] Invalid date in history for calendar:', history.date);
-          return;
-        }
-        
-        const dateStr = format(date, 'yyyy-MM-dd');
-        let emoji = '😐'; // Default neutral
-        let backgroundColor = colors.background.secondary;
-        let textColor = colors.text.secondary;
-
-        switch (history.streakStatus) {
-          case 'maintained':
-          case 'started':
-            emoji = '🔥';
-            backgroundColor = colors.success;
-            textColor = '#fff';
-            break;
-          case 'broken':
-            emoji = '❌';
-            backgroundColor = colors.error;
-            textColor = '#fff';
-            break;
-          case 'none':
-            emoji = '😐';
-            backgroundColor = colors.background.secondary;
-            textColor = colors.text.secondary;
-            break;
-        }
-
-        markedDates[dateStr] = {
-          marked: true,
-          dotColor: backgroundColor,
-          selected: isSameDay(date, localToday),
-          selectedColor: backgroundColor,
-          customStyles: {
-            container: {
-              backgroundColor,
-              borderRadius: BORDER_RADIUS.sm,
-            },
-            text: {
-              color: textColor,
-              fontWeight: 'bold',
-            },
-          },
-        };
-      } catch (error) {
-        console.error('[STREAKS] Error processing history for calendar:', error);
-      }
-    });
-
-    return markedDates;
-  };
-
   const getStreakEmoji = (streak: number): string => {
     if (streak >= 30) return '🏆';
     if (streak >= 14) return '💪';
@@ -652,8 +576,6 @@ export default function StreaksScreen() {
           </Card>
         )}
       </View>
-
-
 
       {/* Recent Activity */}
       <View style={styles.section}>

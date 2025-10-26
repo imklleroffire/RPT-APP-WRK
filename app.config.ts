@@ -17,8 +17,11 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.amtkumar.rptapp',
+      buildNumber: '1',
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSCameraUsageDescription: 'This app needs access to the camera to upload exercise images.',
+        NSPhotoLibraryUsageDescription: 'This app needs access to your photo library to select exercise images.',
       },
     },
     android: {

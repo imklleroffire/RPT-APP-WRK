@@ -475,4 +475,3 @@ export class StreaksService {
 }
 
 export const streaksService = StreaksService.getInstance();
-

@@ -32,17 +32,10 @@ export default {
     web: {
       favicon: './assets/favicon.png',
     },
-    updates: {
-      url: 'https://u.expo.dev/e29930f6-e432-4e09-beb1-4859ca3d3019',
-    },
-    runtimeVersion: {
-      policy: 'appVersion',
-    },
     extra: {
       eas: {
         projectId: 'e29930f6-e432-4e09-beb1-4859ca3d3019',
       },
-      errorRecovery: false,
     },
     plugins: ['expo-router'],
   },

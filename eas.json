@@ -20,8 +20,16 @@
       "autoIncrement": true,
       "channel": "production",
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "simulator": false
+      },
+      "env": {
+        "EXPO_NO_TELEMETRY": "1"
       }
+    },
+    "production-test": {
+      "extends": "production",
+      "distribution": "internal"
     }
   },
   "submit": {

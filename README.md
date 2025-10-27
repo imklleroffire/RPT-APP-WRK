@@ -1,123 +1,136 @@
-# RPT App
+# 🏥 RPT App - Physical Therapy & Rehabilitation Platform
 
-A mobile application for rehabilitation physical therapy, connecting patients with their therapists for better exercise tracking and progress monitoring.
+> **Status:** 🚀 Published to Apple App Store Ecosystem (TestFlight Beta)
 
-## Features
+A comprehensive mobile application connecting physical therapists with patients for personalized rehabilitation programs, exercise tracking, and progress monitoring.
 
-- **Authentication**: Secure login and registration for both patients and therapists
-- **Exercise Management**: Create, assign, and track exercises
-- **Progress Tracking**: Monitor patient progress with streaks and completion rates
-- **Clinic Management**: Therapists can manage their clinic information and patients
-- **Real-time Updates**: Stay updated with patient progress and exercise completion
+---
 
-## Tech Stack
+## 📱 **Platform Availability**
 
-- React Native with Expo
-- TypeScript
-- Firebase (Authentication, Firestore, Storage)
-- Expo Router for navigation
-- React Native components and animations
+- **iOS:** Available on TestFlight (App Store Beta Program)
+- **App Store Connect ID:** `6754540261`
+- **Bundle Identifier:** `com.amtkumar.rptapp`
+- **Version:** 1.0.0
+- **Status:** In Beta Testing, Pending Public Release
 
-## Prerequisites
+**TestFlight Link:** https://appstoreconnect.apple.com/apps/6754540261/testflight/ios
 
-- Node.js (v14 or newer)
-- npm or yarn
-- Expo CLI
-- Firebase account
-- iOS Simulator (Mac only) or Android Emulator
+---
 
-## Getting Started
+## ✨ **Key Features**
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/rpt-app.git
-   cd rpt-app
-   ```
+### For Therapists:
+- 👥 **Patient Management** - Create and manage patient profiles
+- 💪 **Custom Exercise Bundles** - Build personalized rehabilitation programs
+- 📊 **Progress Tracking** - Monitor patient completion rates and streaks
+- 🏥 **Clinic Management** - Invite therapists and organize your practice
+- 📧 **Real-time Notifications** - Stay connected with patients
 
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+### For Patients:
+- 📱 **Exercise Programs** - View assigned exercises from your therapist
+- 🔥 **Streak Calendar** - Track daily progress with visual calendars
+- ✅ **Completion Tracking** - Mark exercises as complete
+- 📈 **Progress Metrics** - See your improvement over time
+- 🔔 **Therapist Connection** - Accept invitations and communicate
 
-3. Create a Firebase project and enable:
-   - Authentication (Email/Password)
-   - Cloud Firestore
-   - Storage
+---
 
-4. Copy the environment variables template:
-   ```bash
-   cp .env.example .env
-   ```
+## 🛠️ **Technical Stack**
 
-5. Fill in your Firebase configuration in the `.env` file:
-   ```
-   EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
-   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-   EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-   EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
-   ```
+- **Framework:** React Native (v0.81.5) + Expo (SDK 54)
+- **Navigation:** Expo Router
+- **Backend:** Firebase (v11.10.0)
+  - Authentication
+  - Firestore Database
+  - Cloud Storage
+- **UI/UX:** Custom themed components with dark mode support
+- **State Management:** React Context API
+- **Calendar:** react-native-calendars
+- **Animations:** React Native Reanimated
 
-6. Start the development server:
-   ```bash
-    npx expo start
-   ```
+---
 
-7. Run on your preferred platform:
-   - Press `i` for iOS Simulator
-   - Press `a` for Android Emulator
-   - Scan QR code with Expo Go app for physical device
+## 🔐 **Security & Privacy**
 
-## Project Structure
+- **Authentication:** Secure email/password with Firebase Auth
+- **Data Storage:** Encrypted Firebase Firestore
+- **Privacy Compliant:** HIPAA-considerate data handling
+- **Role-Based Access:** Separate therapist and patient permissions
+
+---
+
+## 🚀 **Deployment Information**
+
+### **Production Build**
+- **Build System:** EAS Build (Expo Application Services)
+- **Distribution:** App Store (via TestFlight)
+- **Code Signing:** Apple Developer Program
+- **CI/CD:** Automated via EAS
+
+### **App Store Submission**
+- **Submitted:** October 26, 2025
+- **Platform:** iOS (iPhone & iPad)
+- **Category:** Medical, Health & Fitness
+- **Price:** Free
+
+---
+
+## 📊 **Project Structure**
 
 ```
-rpt-app/
-├── app/                    # Main application code
-│   ├── auth/              # Authentication screens
-│   ├── components/        # Reusable components
-│   ├── context/          # React Context providers
-│   ├── types/            # TypeScript type definitions
-│   └── firebase.ts       # Firebase configuration
-├── assets/               # Static assets
-├── .env.example         # Environment variables template
-├── app.config.ts        # Expo configuration
-├── App.tsx             # Application entry point
-└── package.json        # Project dependencies
+RPT-APP/
+├── app/
+│   ├── (auth)/          # Authentication screens
+│   ├── (tabs)/          # Therapist navigation
+│   ├── (patient-tabs)/  # Patient navigation
+│   ├── components/      # Reusable UI components
+│   ├── config/          # Firebase configuration
+│   ├── context/         # React Context providers
+│   ├── services/        # Business logic (streaks, etc.)
+│   └── types/           # TypeScript definitions
+├── assets/              # Images, fonts, icons
+└── eas.json             # Build configuration
 ```
 
-## Development Workflow
+---
 
-1. Create a new branch for your feature:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+##📝 **Notable Achievements**
 
-2. Make your changes and commit them:
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   ```
+- ✅ **Full-stack mobile application** with real-time data synchronization
+- ✅ **Production deployment** to Apple's App Store ecosystem
+- ✅ **Firebase integration** with authentication and cloud database
+- ✅ **Role-based access control** for therapists and patients
+- ✅ **Advanced streak tracking system** with calendar visualization
+- ✅ **Clinic management features** with therapist invitations
+- ✅ **Real-time notifications** system
 
-3. Push your changes and create a pull request:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+---
 
-## Contributing
+## 👨‍💻 **Developer**
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+**Amit Kumar**  
+- **Apple Developer Program:** Active Member
+- **GitHub:** [@imklleroffire](https://github.com/imklleroffire)
+- **Email:** emailmeatamit@gmail.com
 
-## License
+---
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📄 **License & Usage**
 
-## Support
+This application is currently in beta testing. For access or inquiries, contact the developer.
 
-For support, email support@rptapp.com or join our Slack channel.
+---
+
+## 🎯 **Future Roadmap**
+
+- [ ] Public App Store release
+- [ ] Android version
+- [ ] Video exercise demonstrations
+- [ ] In-app messaging between therapists and patients
+- [ ] Analytics dashboard for therapists
+- [ ] Export progress reports (PDF)
+
+---
+
+**Built with ❤️ for improving rehabilitation outcomes**

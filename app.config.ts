@@ -6,6 +6,7 @@ export default {
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
+    scheme: 'rptapp',
     splash: {
       image: './assets/splash.png',
       resizeMode: 'contain',
@@ -41,6 +42,7 @@ export default {
       eas: {
         projectId: 'e29930f6-e432-4e09-beb1-4859ca3d3019',
       },
+      errorRecovery: false,
     },
     plugins: ['expo-router'],
   },

@@ -45,7 +45,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user?.id) {
+    // Safety check: only proceed if user exists and is fully initialized
+    if (!user?.id || !user?.email) {
+      console.log('[NOTIFICATIONS] User not ready yet, skipping notification setup');
+      return;
+    }
+    
+    try {
       console.log('[NOTIFICATIONS] Setting up listener for user:', user.id);
       console.log('[NOTIFICATIONS] User email:', user.email);
       
@@ -150,8 +156,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         allNotificationsUnsubscribe();
         unsubscribe();
       };
-    } else {
-      console.log('[NOTIFICATIONS] No user or db available, clearing notifications');
+    } catch (error) {
+      console.error('[NOTIFICATIONS] Error setting up notification listeners:', error);
       setNotifications([]);
       setLoading(false);
     }

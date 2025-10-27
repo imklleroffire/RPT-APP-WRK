@@ -9,10 +9,28 @@ import LoadingScreen from './components/LoadingScreen';
 import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import { View } from 'react-native';
+import { View, Text } from 'react-native';
+import { ErrorBoundary } from 'react-error-boundary';
+
+console.log('[APP] _layout.tsx loaded - app starting...');
+
+// Error Fallback Component
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#000' }}>
+      <Text style={{ color: '#fff', fontSize: 18, marginBottom: 10 }}>App Error</Text>
+      <Text style={{ color: '#fff', fontSize: 14 }}>{error.message}</Text>
+    </View>
+  );
+}
 
 // Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+try {
+  SplashScreen.preventAutoHideAsync();
+  console.log('[APP] Splash screen prevented from auto-hiding');
+} catch (error) {
+  console.error('[APP] Error preventing splash auto-hide:', error);
+}
 
 function RootLayoutNav() {
   const { user, loading, isPendingVerification } = useAuth();
@@ -133,15 +151,17 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <NotificationProvider>
-          <ThemeProvider>
-            <StatusBar style="auto" />
-            <RootLayoutNav />
-          </ThemeProvider>
-        </NotificationProvider>
-      </View>
-    </AuthProvider>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <AuthProvider>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+          <NotificationProvider>
+            <ThemeProvider>
+              <StatusBar style="auto" />
+              <RootLayoutNav />
+            </ThemeProvider>
+          </NotificationProvider>
+        </View>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

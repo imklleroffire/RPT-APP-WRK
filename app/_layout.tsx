@@ -1,3 +1,20 @@
+// CRITICAL: gesture-handler MUST be at the very top
+import 'react-native-gesture-handler';
+
+// Production polyfills for iOS release builds
+import 'react-native-url-polyfill/auto';
+import { decode as atob, encode as btoa } from 'base-64';
+if (!global.atob) global.atob = atob;
+if (!global.btoa) global.btoa = btoa;
+import 'fast-text-encoding';
+
+// Global error handler to catch production crashes
+import { ErrorUtils } from 'react-native';
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  console.log('🚨 Global Error:', error, 'Fatal:', isFatal);
+  // In production, you could send this to a crash reporting service
+});
+
 import { useFonts } from 'expo-font';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';

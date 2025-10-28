@@ -41,5 +41,8 @@ export default {
     },
     plugins: ['expo-router'],
     jsEngine: 'hermes',
+    runtimeVersion: {
+      policy: 'sdkVersion',
+    },
   },
 }; 

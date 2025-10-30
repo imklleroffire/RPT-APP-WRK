@@ -10,11 +10,11 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { db } from '../_config/firebase';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
+import { Card } from '../_components/ui/Card';
+import { Button } from '../_components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
 import { FONTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 

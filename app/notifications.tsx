@@ -1,5 +1,5 @@
 import React from 'react';
-import { NotificationsModal } from './components/NotificationsModal';
+import { NotificationsModal } from './_components/NotificationsModal';
 import { useRouter } from 'expo-router';
 
 export default function NotificationsScreen() {

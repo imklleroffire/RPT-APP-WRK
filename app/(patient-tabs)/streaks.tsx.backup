@@ -8,19 +8,19 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
 import { Calendar } from 'react-native-calendars';
 import { format, isSameDay, startOfDay, endOfDay, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
-import { db } from '../config/firebase';
+import { db } from '../_config/firebase';
 import { doc, getDoc, collection, query, where, getDocs, Timestamp, setDoc, onSnapshot } from 'firebase/firestore';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { Card } from '../_components/ui/Card';
+import { Button } from '../_components/ui/Button';
 import { Ionicons } from '@expo/vector-icons';
-import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
-import { streaksService } from '../services/streaksService';
-import { StreakData, DailyCompletion } from '../types/streaks';
-import { AestheticStreakCalendar } from '../components/AestheticStreakCalendar';
+import { FONTS, SPACING, BORDER_RADIUS } from '../_constants/theme';
+import { streaksService } from '../_services/streaksService';
+import { StreakData, DailyCompletion } from '../_types/streaks';
+import { AestheticStreakCalendar } from '../_components/AestheticStreakCalendar';
 
 interface StreakStats {
   currentStreak: number;

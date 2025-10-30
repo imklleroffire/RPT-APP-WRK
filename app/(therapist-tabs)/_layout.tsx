@@ -1,9 +1,9 @@
 import { Tabs } from 'expo-router';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme } from '../_context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet } from 'react-native';
-import { SPACING } from '../constants/theme';
+import { SPACING } from '../_constants/theme';
 
 export default function TherapistLayout() {
   const { colors } = useTheme();

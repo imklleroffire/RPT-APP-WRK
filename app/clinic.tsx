@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import { useAuth } from './context/AuthContext';
-import { db } from './config/firebase';
+import { useAuth } from './_context/AuthContext';
+import { db } from './_config/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { User } from './types';
 

@@ -9,8 +9,8 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from './context/AuthContext';
-import { db } from './config/firebase';
+import { useAuth } from './_context/AuthContext';
+import { db } from './_config/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 

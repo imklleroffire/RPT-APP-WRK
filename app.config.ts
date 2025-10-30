@@ -16,7 +16,7 @@ export default {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.amtkumar.rptapp',
-      newArchEnabled: false,
+      newArchEnabled: true,
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSCameraUsageDescription: 'This app needs access to the camera to upload exercise images.',
@@ -29,7 +29,7 @@ export default {
         backgroundColor: '#ffffff',
       },
       package: 'com.amtkumar.rptapp',
-      newArchEnabled: false,
+      newArchEnabled: true,
     },
     web: {
       favicon: './assets/favicon.png',
@@ -39,10 +39,19 @@ export default {
         projectId: 'e29930f6-e432-4e09-beb1-4859ca3d3019',
       },
     },
-    plugins: ['expo-router'],
-    jsEngine: 'hermes',
-    runtimeVersion: {
-      policy: 'sdkVersion',
+    plugins: [
+      'expo-router',
+      [
+        'expo-router',
+        {
+          origin: 'https://rptapp.com',
+        },
+      ],
+    ],
+    experiments: {
+      typedRoutes: false,
     },
+    jsEngine: 'hermes',
+    runtimeVersion: '1.0.0',
   },
 }; 

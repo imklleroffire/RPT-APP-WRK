@@ -1,19 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 
 export default function IndexScreen() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Immediately redirect to login page
-    router.replace('/(auth)/login');
-  }, [router]);
-
+  // Navigation is handled by _layout.tsx
+  // This component should not be rendered due to immediate navigation
   return (
     <View style={styles.container}>
       <Text style={styles.title}>RPT App</Text>
-      <Text style={styles.subtitle}>Redirecting...</Text>
+      <Text style={styles.subtitle}>Loading...</Text>
     </View>
   );
 }

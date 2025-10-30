@@ -2,15 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { useNotifications } from '../context/NotificationContext';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
+import { useNotifications } from '../_context/NotificationContext';
+import { Card } from '../_components/ui/Card';
+import { Button } from '../_components/ui/Button';
 import { collection, query, where, getDocs, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
-import ClinicDetailsModal from '../components/ClinicDetailsModal';
+import { db } from '../_config/firebase';
+import { FONTS, SPACING, BORDER_RADIUS } from '../_constants/theme';
+import ClinicDetailsModal from '../_components/ClinicDetailsModal';
 
 interface Clinic {
   id: string;

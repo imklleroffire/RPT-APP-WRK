@@ -10,13 +10,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { doc, getDoc, updateDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../../_config/firebase';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { FONTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
+import { useAuth } from '../../_context/AuthContext';
+import { useTheme } from '../../_context/ThemeContext';
+import { Card } from '../../_components/ui/Card';
+import { Button } from '../../_components/ui/Button';
+import { FONTS, SPACING, BORDER_RADIUS } from '../../_constants/theme';
 
 interface Patient {
   id: string;

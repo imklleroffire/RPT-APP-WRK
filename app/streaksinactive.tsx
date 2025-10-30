@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { useAuth } from './context/AuthContext';
-import { db } from './config/firebase';
+import { useAuth } from './_context/AuthContext';
+import { db } from './_config/firebase';
 import { collection, query, where, getDocs, doc, getDoc, Timestamp } from 'firebase/firestore';
 import { Streak } from './types';
 import { Calendar } from 'react-native-calendars';

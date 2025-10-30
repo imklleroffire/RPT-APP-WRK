@@ -12,15 +12,15 @@ import {
   ScrollView
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { doc, collection, addDoc, serverTimestamp, onSnapshot, query, where, deleteDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { showAlert } from '../utils/alerts';
-import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { db } from '../_config/firebase';
+import { showAlert } from '../_utils/alerts';
+import { Card } from '../_components/ui/Card';
+import { Button } from '../_components/ui/Button';
+import { FONTS, SPACING, BORDER_RADIUS } from '../_constants/theme';
 
 interface Patient {
   id: string;

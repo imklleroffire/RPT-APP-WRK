@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../_context/AuthContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

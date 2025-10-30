@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
+import { Input } from '../_components/ui/Input';
+import { Button } from '../_components/ui/Button';
+import { Card } from '../_components/ui/Card';
+import { FONTS, SPACING, BORDER_RADIUS } from '../_constants/theme';
 
 export default function RegisterScreen() {
   const [step, setStep] = useState<'role' | 'details'>('role');

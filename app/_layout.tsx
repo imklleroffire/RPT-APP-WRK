@@ -8,24 +8,17 @@ if (!global.atob) global.atob = atob;
 if (!global.btoa) global.btoa = btoa;
 import 'fast-text-encoding';
 
-// Global error handler to catch production crashes
-import { ErrorUtils } from 'react-native';
-ErrorUtils.setGlobalHandler((error, isFatal) => {
-  console.log('🚨 Global Error:', error, 'Fatal:', isFatal);
-  // In production, you could send this to a crash reporting service
-});
-
 import { useFonts } from 'expo-font';
 import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './_context/AuthContext';
 import { useRouter, useSegments } from 'expo-router';
-import LoadingScreen from './components/LoadingScreen';
-import { NotificationProvider } from './context/NotificationContext';
-import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
+import LoadingScreen from './_components/LoadingScreen';
+import { NotificationProvider } from './_context/NotificationContext';
+import { ThemeProvider } from './_context/ThemeContext';
+import { AuthProvider } from './_context/AuthContext';
 import { View } from 'react-native';
 
 // Prevent the splash screen from auto-hiding

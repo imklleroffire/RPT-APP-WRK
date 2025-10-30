@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Animated, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { useAuth } from '../context/AuthContext';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { Input } from '../components/ui/Input';
-import { FONTS, SPACING } from '../constants/theme';
-import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../_context/AuthContext';
+import { Button } from '../_components/ui/Button';
+import { Card } from '../_components/ui/Card';
+import { Input } from '../_components/ui/Input';
+import { FONTS, SPACING } from '../_constants/theme';
+import { useTheme } from '../_context/ThemeContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');

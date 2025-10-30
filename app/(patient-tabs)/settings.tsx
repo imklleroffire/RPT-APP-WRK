@@ -1,5 +1,5 @@
 import React from 'react';
-import { SettingsContent } from '../components/SettingsContent';
+import { SettingsContent } from '../_components/SettingsContent';
 
 export default function SettingsScreen() {
   return <SettingsContent showBackButton />;

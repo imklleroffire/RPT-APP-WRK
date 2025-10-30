@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
-import Logo from '../components/Logo';
+import Logo from '../_components/Logo';
 
 export default function SelectRoleScreen() {
   const router = useRouter();

@@ -15,7 +15,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../_context/AuthContext';
 import {
   collection,
   query,
@@ -28,16 +28,16 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '../config/firebase';
-import { ExerciseDetailsView } from '../components/ExerciseDetailsView';
-import CreateBundleModal from '../components/CreateBundleModal';
-import EditBundleModal from '../components/EditBundleModal';
+import { db } from '../_config/firebase';
+import { ExerciseDetailsView } from '../_components/ExerciseDetailsView';
+import CreateBundleModal from '../_components/CreateBundleModal';
+import EditBundleModal from '../_components/EditBundleModal';
 import { useRouter } from 'expo-router';
-import { showAlert } from '../utils/alerts';
-import { useTheme } from '../context/ThemeContext';
-import { Card } from '../components/ui/Card';
-import { FONTS, SPACING, BORDER_RADIUS } from '../constants/theme';
-import { EXERCISE_IMAGES, DEFAULT_BUNDLES } from '../constants/exerciseImages';
+import { showAlert } from '../_utils/alerts';
+import { useTheme } from '../_context/ThemeContext';
+import { Card } from '../_components/ui/Card';
+import { FONTS, SPACING, BORDER_RADIUS } from '../_constants/theme';
+import { EXERCISE_IMAGES, DEFAULT_BUNDLES } from '../_constants/exerciseImages';
 import { Exercise, Bundle } from '../types';
 
 interface Patient {

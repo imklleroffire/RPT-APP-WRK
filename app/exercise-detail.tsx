@@ -10,8 +10,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { useAuth } from './context/AuthContext';
-import { db } from './config/firebase';
+import { useAuth } from './_context/AuthContext';
+import { db } from './_config/firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { AssignedExercise } from './types';
 

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { auth } from '../config/firebase';
+import { auth } from '../_config/firebase';
 import { sendEmailVerification } from 'firebase/auth';
-import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
-import { FONTS, SPACING } from '../constants/theme';
+import { useAuth } from '../_context/AuthContext';
+import { useTheme } from '../_context/ThemeContext';
+import { Button } from '../_components/ui/Button';
+import { Card } from '../_components/ui/Card';
+import { FONTS, SPACING } from '../_constants/theme';
 
 export default function VerificationScreen() {
   const router = useRouter();
